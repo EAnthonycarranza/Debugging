@@ -1,11 +1,10 @@
 // server/api/routes/protectedRoutes.js
 
 const express = require('express');
-const { protect } = require('../../middleware/authMiddleware');
-const { getProtectedData } = require('../controllers/protectedController');
 const router = express.Router();
+const { getProtectedData } = require('../controllers/protectedController');
 
-// Example protected route
-router.get('/data', protect, getProtectedData);
+// Define a route that uses the protected controller action
+router.get('/data', getProtectedData);
 
 module.exports = router;

@@ -2,7 +2,10 @@
 const PersonalInformation = require('../models/schemas/PersonalInformation'); // Update the path as per your project structure
 
 // Get all personal information entries
-exports.getPersonalInformations = async (req, res) => {
+const getPersonalInformations = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
   try {
     const personalInfos = await PersonalInformation.find();
     res.json(personalInfos);
@@ -13,24 +16,30 @@ exports.getPersonalInformations = async (req, res) => {
 };
 
 // Get a single personal information entry by ID
-exports.getPersonalInformationById = async (req, res) => {
+const getPersonalInformationById = async (req, res) => {
   try {
-    const personalInfo = await PersonalInformation.findById(req.params.id);
+    const { id } = req.params;
+    const personalInfo = await PersonalInformation.findById(id);
+
     if (!personalInfo) {
-      return res.status(404).json({ msg: 'Personal information not found' });
+      return res.status(404).json({ message: 'Personal information not found' });
     }
+
+    // Check if the requester is the owner or an admin
+    if (personalInfo.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     res.json(personalInfo);
   } catch (error) {
-    console.error('Error fetching personal information by ID:', error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ msg: 'Personal information not found' });
-    }
-    res.status(500).send('Server Error');
+    console.error(error);
+    res.status(500).send('Server error');
   }
 };
 
+
 // Create a new personal information entry
-exports.createPersonalInformation = async (req, res) => {
+const createPersonalInformation = async (req, res) => {
   try {
     const newPersonalInfo = new PersonalInformation({
       ...req.body,
@@ -46,7 +55,7 @@ exports.createPersonalInformation = async (req, res) => {
 };
 
 // Update an existing personal information entry by ID
-exports.updatePersonalInformation = async (req, res) => {
+const updatePersonalInformation = async (req, res) => {
   try {
     const personalInfo = await PersonalInformation.findByIdAndUpdate(
       req.params.id,
@@ -61,7 +70,7 @@ exports.updatePersonalInformation = async (req, res) => {
 };
 
 // Delete a personal information entry by ID
-exports.deletePersonalInformation = async (req, res) => {
+const deletePersonalInformation = async (req, res) => {
   try {
     await PersonalInformation.findByIdAndRemove(req.params.id);
     res.json({ msg: 'Personal information deleted' });
@@ -69,4 +78,12 @@ exports.deletePersonalInformation = async (req, res) => {
     console.error('Error deleting personal information:', error);
     res.status(500).send('Server Error');
   }
+};
+
+module.exports = {
+  getPersonalInformations,
+  getPersonalInformationById,
+  createPersonalInformation,
+  updatePersonalInformation,
+  deletePersonalInformation
 };

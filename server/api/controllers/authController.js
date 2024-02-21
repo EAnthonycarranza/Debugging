@@ -1,74 +1,69 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/User'); // Ensure this path is correct
 
 exports.register = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    let user = await User.findOne({ username });
+    const { email, password, role } = req.body;
+    console.log('Attempting to register user:', email);
 
+    let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ msg: 'User already exists' });
+      console.log('User already exists:', email);
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user = new User({
-      username,
-      password: await bcrypt.hash(password, salt)
-    });
-
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user = new User({ email, password: hashedPassword, role });
     await user.save();
 
-    const payload = {
-      user: {
-        id: user.id
-      }
-    };
+    // Correctly place JWT signing here where `user` is defined
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    console.log('JWT signed with role:', user.role); // Log the role for debugging
+    console.log('User registered:', email);
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    res.json({ token }); // Send the signed token as response
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.login = async (req, res) => {
+  console.log('Login function hit');
   try {
-    const { username, password } = req.body;
-    console.log(`Logging in with username: ${username} and password: ${password}`); // Debug log
+    const { email, password } = req.body;
 
-    let user = await User.findOne({ username });
+    console.log('Attempting to log in user:', email);
+
+    // Attempt to find the user by their email
+    const user = await User.findOne({ email });
+
+    // Log the retrieved user object
+    console.log('Retrieved user:', user); // This line is added
+
     if (!user) {
-      console.log('User not found'); // Debug log
-      return res.status(400).json({ msg: 'Invalid Credentials' });
+      console.log('User not found:', email);
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log(`User ${user.username} found with role ${user.role}.`); // This should log the actual username and role, if found
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log(`Password match: ${isMatch}`); // Debug log
-
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Invalid Credentials' });
+      console.log('Password does not match for user:', email);
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const payload = {
-      user: {
-        id: user.id
-      }
-    };
-
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
+    // If everything's correct, proceed to generate and send the token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
     );
-  } catch (err) {
-    console.error(err.message);
+    res.json({ token });
+  } catch (error) {
+    console.error('Error during login:', error);
     res.status(500).send('Server error');
   }
 };
