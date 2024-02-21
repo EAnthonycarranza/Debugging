@@ -1,7 +1,10 @@
 const MedicalInformation = require('../models/schemas/MedicalInformation');
 
-exports.getMedicalInformations = async (req, res) => {
+const getMedicalInformations = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     console.log("Fetching all medical information records...");
     const medicalInfos = await MedicalInformation.find();
     console.log("Medical information records fetched:", medicalInfos);
@@ -12,7 +15,7 @@ exports.getMedicalInformations = async (req, res) => {
   }
 };
 
-exports.getMedicalInformationById = async (req, res) => {
+const getMedicalInformationById = async (req, res) => {
   try {
     console.log(`Fetching medical information record with ID: ${req.params.id}`);
     const medicalInfo = await MedicalInformation.findById(req.params.id);
@@ -28,7 +31,7 @@ exports.getMedicalInformationById = async (req, res) => {
   }
 };
 
-exports.createMedicalInformation = async (req, res) => {
+const createMedicalInformation = async (req, res) => {
   try {
     console.log("Creating new medical information record:", req.body);
     const newMedicalInfo = new MedicalInformation(req.body);
@@ -41,8 +44,11 @@ exports.createMedicalInformation = async (req, res) => {
   }
 };
 
-exports.updateMedicalInformation = async (req, res) => {
+const updateMedicalInformation = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     console.log(`Updating medical information record with ID: ${req.params.id}`, req.body);
     const medicalInfo = await MedicalInformation.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!medicalInfo) {
@@ -57,8 +63,11 @@ exports.updateMedicalInformation = async (req, res) => {
   }
 };
 
-exports.deleteMedicalInformation = async (req, res) => {
+const deleteMedicalInformation = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     console.log(`Deleting medical information record with ID: ${req.params.id}`);
     const medicalInfo = await MedicalInformation.findById(req.params.id);
     if (!medicalInfo) {
@@ -72,4 +81,12 @@ exports.deleteMedicalInformation = async (req, res) => {
     console.error("Error deleting medical information record:", err);
     res.status(500).send('Server Error');
   }
+};
+
+module.exports = {
+  getMedicalInformations,
+  getMedicalInformationById,
+  createMedicalInformation,
+  updateMedicalInformation,
+  deleteMedicalInformation
 };

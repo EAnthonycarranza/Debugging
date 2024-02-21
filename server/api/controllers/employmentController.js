@@ -1,7 +1,10 @@
 const Employment = require('../models/schemas/Employment');
 
-exports.getEmployments = async (req, res) => {
+const getEmployments = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const employments = await Employment.find();
     res.json(employments);
   } catch (err) {
@@ -9,7 +12,7 @@ exports.getEmployments = async (req, res) => {
   }
 };
 
-exports.getEmploymentById = async (req, res) => {
+const getEmploymentById = async (req, res) => {
   try {
     const employment = await Employment.findById(req.params.id);
     if (!employment) return res.status(404).json({ msg: 'Employment record not found' });
@@ -19,7 +22,7 @@ exports.getEmploymentById = async (req, res) => {
   }
 };
 
-exports.createEmployment = async (req, res) => {
+const createEmployment = async (req, res) => {
   try {
     const newEmployment = new Employment(req.body);
     const savedEmployment = await newEmployment.save();
@@ -29,8 +32,11 @@ exports.createEmployment = async (req, res) => {
   }
 };
 
-exports.updateEmployment = async (req, res) => {
+const updateEmployment = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const employment = await Employment.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!employment) return res.status(404).json({ msg: 'Employment record not found' });
     res.json(employment);
@@ -39,8 +45,11 @@ exports.updateEmployment = async (req, res) => {
   }
 };
 
-exports.deleteEmployment = async (req, res) => {
+const deleteEmployment = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const employment = await Employment.findById(req.params.id);
     if (!employment) return res.status(404).json({ msg: 'Employment record not found' });
     await employment.remove();
@@ -48,4 +57,12 @@ exports.deleteEmployment = async (req, res) => {
   } catch (err) {
     res.status(500).send('Server Error');
   }
+};
+
+module.exports = {
+  getEmployments,
+  getEmploymentById,
+  createEmployment,
+  updateEmployment,
+  deleteEmployment
 };

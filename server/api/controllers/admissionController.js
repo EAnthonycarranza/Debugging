@@ -1,8 +1,10 @@
 const AdmissionAgreement = require('../models/AdmissionAgreement');
 
-// Get all admission agreements
-exports.getAdmissions = async (req, res) => {
+const getAdmissions = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const admissions = await AdmissionAgreement.find();
     res.json(admissions);
   } catch (err) {
@@ -10,8 +12,7 @@ exports.getAdmissions = async (req, res) => {
   }
 };
 
-// Get a single admission agreement by ID
-exports.getAdmissionById = async (req, res) => {
+const getAdmissionById = async (req, res) => {
   try {
     const admission = await AdmissionAgreement.findById(req.params.id);
     if (!admission) return res.status(404).json({ msg: 'Admission not found' });
@@ -21,8 +22,7 @@ exports.getAdmissionById = async (req, res) => {
   }
 };
 
-// Create a new admission agreement
-exports.createAdmission = async (req, res) => {
+const createAdmission = async (req, res) => {
   try {
     const newAdmission = new AdmissionAgreement(req.body);
     const savedAdmission = await newAdmission.save();
@@ -32,9 +32,11 @@ exports.createAdmission = async (req, res) => {
   }
 };
 
-// Update an admission agreement by ID
-exports.updateAdmission = async (req, res) => {
+const updateAdmission = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const admission = await AdmissionAgreement.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!admission) return res.status(404).json({ msg: 'Admission not found' });
     res.json(admission);
@@ -43,9 +45,11 @@ exports.updateAdmission = async (req, res) => {
   }
 };
 
-// Delete an admission agreement by ID
-exports.deleteAdmission = async (req, res) => {
+const deleteAdmission = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
     const admission = await AdmissionAgreement.findById(req.params.id);
     if (!admission) return res.status(404).json({ msg: 'Admission not found' });
     await admission.remove();
@@ -53,4 +57,12 @@ exports.deleteAdmission = async (req, res) => {
   } catch (err) {
     res.status(500).send('Server Error');
   }
+};
+
+module.exports = {
+  getAdmissions,
+  getAdmissionById,
+  createAdmission,
+  updateAdmission,
+  deleteAdmission
 };
