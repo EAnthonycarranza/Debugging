@@ -146,30 +146,163 @@ const enumFields = {
 
 const resolvers = {
     Query: {
-        personalInformations: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return PersonalInformation.find({ userId: user.id });
-        },
-        medicalInformations: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return MedicalInformation.find({ userId: user.id });
-        },
-        histories: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return History.find({ userId: user.id });
-        },
-        educations: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return Education.find({ userId: user.id });
-        },
-        employments: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return Employment.find({ userId: user.id });
-        },
-        agreementAcknowledgements: async (_, args, { user }) => {
-          if (!user) throw new Error("Not authenticated");
-          return AgreementAcknowledgement.find({ userId: user.id });
-        },
+
+
+  users: async (_, args, { req }) => {
+    // Check if the user is authenticated
+    if (!req.user) throw new Error("Not authenticated");
+
+    // If the user is an admin, return all users
+    if (req.user.role === 'admin') {
+      return await User.find({});
+    } else {
+      // If the user is not an admin, return only their own data
+      return await User.find({ _id: req.user.id });
+    }
+  },
+        myProtectedQuery: (parent, args, context) => {
+            // Your resolver logic here
+            // Make sure to check for authentication if it's a protected query
+            if (!context.req.user) {
+              throw new Error('Not authenticated');
+            }
+            return "This is a protected query response";
+          },    
+          personalInformations: async (_, __, { req }) => {
+            if (!req.user) throw new Error("Not authenticated");
+          
+            try {
+              // Assuming req.user.role includes the user's role
+              if (req.user.role === 'admin') {
+                // Fetch all records for admins
+                const personalInformations = await PersonalInformation.find({});
+                return personalInformations.map(info => ({
+                  ...info._doc, // Using ._doc to get the raw document
+                  id: info._id,
+                }));
+              } else {
+                // Fetch only user's records for non-admins
+                const personalInformations = await PersonalInformation.find({ userId: req.user.userId });
+                return personalInformations.map(info => ({
+                  ...info._doc,
+                  id: info._id,
+                }));
+              }
+            } catch (error) {
+              console.error(error);
+              throw new Error('Error fetching personal information');
+            }
+          },
+          
+          medicalInformations: async () => {
+            try {
+              const response = await fetch('http://localhost:3001/api/medicalInformation');
+              if (!response.ok) {
+                throw new Error('Failed to fetch medical information');
+              }
+              const medicalInformations = await response.json();
+              return medicalInformations.map(info => ({
+                ...info,
+                id: info._id, // Assuming MongoDB is used; adapt as needed
+                // Ensure the structure matches what your GraphQL query expects
+                // For example, if terminalIllnesses is an array in your REST API,
+                // no change is needed. If it's a string or another format, you might need to adapt it.
+                currentMedications: info.currentMedications // Assuming this is already an array of objects as your GraphQL schema expects
+              }));
+            } catch (error) {
+              console.error('Error fetching medical information:', error);
+              throw new Error('Error fetching medical information');
+            }
+          },
+          histories: async (_, __, { req }) => {
+            try {
+              const response = await fetch(`http://localhost:3001/api/history`, {
+                headers: {
+                  Authorization: req.headers.authorization
+                }
+              });
+              if (!response.ok) {
+                throw new Error('Failed to fetch histories');
+              }
+              const histories = await response.json();
+              return histories.map(history => ({
+                ...history,
+                id: history._id || 'fallback-id', // Map _id to id and provide a fallback if null
+              }));
+            } catch (error) {
+              console.error(error);
+              throw new Error('Error fetching histories');
+            }
+          },          
+          educations: async (_, __, { req }) => {
+            try {
+              const response = await fetch(`http://localhost:3001/api/education`, {
+                headers: {
+                  Authorization: req.headers.authorization
+                }
+              });
+              if (!response.ok) {
+                throw new Error('Failed to fetch educations');
+              }
+              const educations = await response.json();
+              return educations.map(education => ({
+                ...education,
+                id: education._id, // Ensure each entity has an 'id' for GraphQL
+              }));
+            } catch (error) {
+              console.error(error);
+              throw new Error('Error fetching educations');
+            }
+          },
+          
+          employments: async (_, __, { req }) => {
+            try {
+              // Fetch employments belonging to the authenticated user from the API
+              const response = await fetch(`http://localhost:3001/api/employment`, {
+                headers: {
+                  Authorization: req.headers.authorization // Pass the authorization header from the incoming request
+                }
+              });
+              if (!response.ok) {
+                throw new Error('Failed to fetch employments');
+              }
+              const employments = await response.json();
+              return employments.map(employment => ({
+                ...employment,
+                id: employment._id, // Map MongoDB '_id' to GraphQL 'id'
+                // Ensure all fields expected by your GraphQL schema are included and properly formatted
+                // Example: Convert dates to your required format, ensure arrays are correctly structured, etc.
+              }));
+            } catch (error) {
+              console.error(error);
+              throw new Error('Error fetching employments');
+            }
+          },
+          
+          agreementAcknowledgements: async (_, __, { req }) => {
+            try {
+              // Fetch agreement acknowledgements belonging to the authenticated user from the API
+              const response = await fetch(`http://localhost:3001/api/agreementAcknowledgement`, {
+                headers: {
+                  Authorization: req.headers.authorization // Pass the authorization header from the incoming request
+                }
+              });
+              if (!response.ok) {
+                throw new Error('Failed to fetch agreement acknowledgements');
+              }
+              const agreementAcknowledgements = await response.json();
+              return agreementAcknowledgements.map(acknowledgement => ({
+                ...acknowledgement,
+                id: acknowledgement._id, // Map MongoDB '_id' to GraphQL 'id'
+                // Make sure to format or include any additional fields expected by your GraphQL schema here
+                // For example, if there are date fields, convert them to your required format
+              }));
+            } catch (error) {
+              console.error(error);
+              throw new Error('Error fetching agreement acknowledgements');
+            }
+          },
+          
         // For queries fetching a single item by ID, ensure the item belongs to the user
         personalInformation: async (_, { id }, { user }) => {
           if (!user) throw new Error("Not authenticated");
@@ -222,14 +355,28 @@ const resolvers = {
     },
   Mutation: {
     login: async (_, { email, password }) => {
-        const user = await User.findOne({ email });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-          throw new Error('Incorrect email or password');
+        try {
+          const user = await User.findOne({ email });
+          if (!user) {
+            throw new Error('User not found');
+          }
+          
+          const isPasswordCorrect = await bcrypt.compare(password, user.password);
+          if (!isPasswordCorrect) {
+            throw new Error('Incorrect email or password');
+          }
+          
+          const token = jwt.sign(
+            { userId: user.id, role: user.isAdmin ? 'admin' : 'user' },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+          );
+          
+          return { token, user };
+        } catch (error) {
+          console.error('Error during login', error);
+          throw new Error('Login failed');
         }
-  
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-          expiresIn: '1d',
-        });
       },
   
       signup: async (_, { email, password, name, username }) => {
@@ -256,8 +403,12 @@ const resolvers = {
           await user.save();
       
           // Generate JWT token for the new user
-          const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-      
+          const token = jwt.sign(
+            { userId: user.id, role: user.role }, // Include the role in the JWT payload
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+          );
+          
           console.log("User saved successfully:", user);
       
           return {
@@ -268,6 +419,19 @@ const resolvers = {
           console.error("Error saving user:", error);
           throw new Error('There was a problem creating the user.');
         }
+      },
+
+      updateUser: async (_, { id, input }, { req }) => {
+        // Check if the user is authenticated
+        if (!req.user) throw new Error("Not authenticated");
+    
+        // If the user is not an admin and trying to update someone else's data, throw an error
+        if (req.user.role !== 'admin' && req.user.id !== id) {
+          throw new Error("Not authorized to update this user's data");
+        }
+    
+        // Proceed with the update
+        return await User.findByIdAndUpdate(id, input, { new: true });
       },
         
     createPersonalInformation: async (_, { input }) => {

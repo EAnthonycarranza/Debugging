@@ -115,6 +115,13 @@ const typeDefs = gql`
     studentSignature: String
     witnessSignature: String
   }
+
+  input UserInput {
+    username: String
+    email: String
+    # Add other fields that can be updated
+  }
+  
   type User {
     id: ID!
     email: String!
@@ -175,6 +182,7 @@ const typeDefs = gql`
   }  
 
   type Query {
+    myProtectedQuery: String
     personalInformations: [PersonalInformation]
     medicalInformations: [MedicalInformation]
     histories: [History]
@@ -187,9 +195,11 @@ const typeDefs = gql`
     education(id: ID!): Education
     employment(id: ID!): Employment
     agreementAcknowledgement(id: ID!): AgreementAcknowledgement
+    users: [User]
   }
 
   type Mutation {
+    updateUser(id: ID!, input: UserInput!): User
     login(email: String!, password: String!): AuthPayload
     signup(email: String!, password: String!, name: String!, username: String!): AuthPayload
 
