@@ -47,15 +47,19 @@ function GetHistory() {
             <p>Last Used: {history.lastUsed}</p>
             <p>Upcoming Court Dates: {history.upcomingCourtDates.join(', ')}</p>
             <p>Probation Officer Details:</p>
-            <ul>
-              <li>Name: {history.probationOfficerDetails.name}</li>
-              <li>Contact: {history.probationOfficerDetails.contact}</li>
-            </ul>
+            {history.probationOfficerDetails && (
+  <ul>
+    <li>Name: {history.probationOfficerDetails.name}</li>
+    <li>Contact: {history.probationOfficerDetails.contact}</li>
+  </ul>
+)}
+
             <p>Incarceration Details:</p>
             <ul>
-              <li>Date of Incarceration: {history.incarcerationDetails.dateOfIncarceration}</li>
-              <li>Charge: {history.incarcerationDetails.charge}</li>
-              <li>Location: {history.incarcerationDetails.location}</li>
+            <li>Date of Incarceration: {history.incarcerationDetails?.dateOfIncarceration}</li>
+            <li>Charge: {history.incarcerationDetails?.charge}</li>
+            <li>Location: {history.incarcerationDetails?.location}</li>
+
             </ul>
           </li>
         ))}

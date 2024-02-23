@@ -16,24 +16,30 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 // HTTP link
 const httpLink = new HttpLink({
   uri: 'http://localhost:3001/graphql',
+  // Removed cache initialization from here
 });
 
 // Auth link
 const authLink = setContext((_, { headers }) => {
-  // Get the authentication token from local storage if it exists
-  const token = localStorage.getItem('authToken');
-  // Return the headers to the context so httpLink can read them
+  // Retrieve the authentication token from local storage
+  const token = localStorage.getItem('token');
+  // Return the headers to the context so the HTTP link can read them
   return {
     headers: {
       ...headers,
       authorization: token ? `Bearer ${token}` : "",
     }
-  }
+  };
 });
 
-// Apollo Client instance
+// Combine the auth link, error link, and HTTP link
+const link = from([
+  errorLink,
+  authLink.concat(httpLink), // Now combining authLink with httpLink and errorLink
+]);
+
 const client = new ApolloClient({
-  link: from([authLink, httpLink]),
+  link: link,
   cache: new InMemoryCache(),
 });
 
