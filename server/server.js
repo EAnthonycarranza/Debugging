@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { ApolloServer } = require('apollo-server-express');
 const bcrypt = require('bcrypt');
 const authMiddleware = require('./middleware/authMiddleware');
+const userController = require('./api/controllers/userController');
 
 // Import typeDefs and resolvers
 const typeDefs = require('./schemas/typeDefs');
@@ -60,6 +61,7 @@ app.use('/api/protected', authMiddleware, protectedRoutes); // Protect these rou
 app.use('/api/admissions', admissionRoutes);
 console.log('Setting up routes...');
 app.use('/api/users', authRoutes);
+app.post('/api/users/login', userController.login);
 app.use('/api/personalInformation', personalInformationRoutes);
 app.use('/api/medicalInformation', medicalInformationRoutes);
 app.use('/api/history', historyRoutes);
@@ -108,7 +110,8 @@ async function initializeAdminUser() {
 const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => ({ req, user: req.user })  // Make the user object available in the Apollo context
+  context: ({ req }) => ({ req, user: req.user })
+  // Make the user object available in the Apollo context
 });
 
 

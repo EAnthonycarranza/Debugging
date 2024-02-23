@@ -8,6 +8,12 @@ const User = require('../api/models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+const sanitize = (input) => {
+  // Remove HTML tags from the input string
+  const sanitizedInput = input.replace(/<[^>]*>?/gm, '');
+  return sanitizedInput;
+};
+
 const formatInputForModel = (input) => {
     // Handle date fields
     const dateFields = ['dateOfBirth', 'revokedOrSuspendedDate', 'startDate', 'endDate', 'acknowledgedAt', 'lastUsed', 'dateOfIncarceration'];
@@ -62,6 +68,7 @@ numericFields.forEach(field => {
     input[field] = Number(input[field]);
   }
 });
+
 
 // Sanitize text fields to prevent injection attacks
 // Utilize a library like 'xss' or similar for sanitizing input
@@ -168,6 +175,8 @@ const resolvers = {
             }
             return "This is a protected query response";
           },    
+
+      
           personalInformation: async (_, { id }, { req }) => {
             try {
               const info = await PersonalInformation.findById(id);
@@ -425,11 +434,18 @@ const resolvers = {
         return await User.findByIdAndUpdate(id, input, { new: true });
       },
         
-    createPersonalInformation: async (_, { input }) => {
-      const formattedInput = formatInputForModel(input);
-      const newPersonalInformation = new PersonalInformation(formattedInput);
-      return await newPersonalInformation.save();
-    },
+      createPersonalInformation: async (_, { input }) => {
+        try {
+          const formattedInput = formatInputForModel(input); // Ensure input is properly formatted
+          const newPersonalInformation = new PersonalInformation(formattedInput);
+          const savedPersonalInformation = await newPersonalInformation.save();
+          return savedPersonalInformation;
+        } catch (error) {
+          console.error("Error creating personal information:", error);
+          throw new Error("Failed to create personal information.");
+        }
+      },
+      
     updatePersonalInformation: async (_, { id, input }) => {
       const formattedInput = formatInputForModel(input);
       return await PersonalInformation.findByIdAndUpdate(id, formattedInput, { new: true });

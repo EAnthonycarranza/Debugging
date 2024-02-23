@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Ensure this path is correct
+const User = require('../models/User'); // Ensure this path matches your project structure
 
-exports.register = async (req, res) => {
+const register = async (req, res) => {
   try {
     const { email, password, username } = req.body;
 
@@ -41,35 +41,27 @@ exports.register = async (req, res) => {
   }
 };
 
-
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log('Attempting to log in user:', email);
-
-    // Attempt to find the user by their email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if the provided password matches the user's password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate a token for the authenticated user
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-
-    // Respond with the token
-    res.json({ token });
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(500).send('Server error');
+const loginUser = async (email, password) => {
+  // Attempt to find the user by email
+  const user = await User.findOne({ email });
+  
+  if (!user) {
+    // User does not exist
+    return { error: "User not found" };
   }
+
+  // Check if the password is correct
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    // Password does not match
+    return { error: "Invalid credentials" };
+  }
+
+  // User found and password matches, generate token
+  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+  return { token, userId: user.id }; // Return both the token and userId
 };
+
+// Correct way to export both functions
+module.exports = { register, loginUser };
