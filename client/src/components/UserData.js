@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext'; // Adjust the path as necessary
-import GetPersonalInformation from './GetPersonalInformation'; // Import the GetPersonalInformation component
+import GetPersonalInformation from './GetPersonalInformation';
+import AddPersonalInformation from './AddPersonalInfo' // Import the GetPersonalInformation component
 import GetMedicalInformation from './GetMedicalInformation';
 import GetHistory from './GetHistory';
 import GetEducation from './GetEducation';
@@ -13,6 +14,7 @@ export default function UserData() {
   return (
     <div>
       <GetPersonalInformation />
+      <AddPersonalInformation />
 
     </div>
   );

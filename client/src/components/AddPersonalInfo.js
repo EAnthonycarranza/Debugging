@@ -1,58 +1,58 @@
-// src/components/AddPersonalInfo.js
-import React, { useState } from 'react';
+import React from 'react';
 import { useMutation, gql } from '@apollo/client';
 
+// Assuming this is your GraphQL mutation
 const CREATE_PERSONAL_INFORMATION = gql`
-  mutation CreatePersonalInformation($firstName: String!, $lastName: String!) {
-    createPersonalInformation(firstName: $firstName, lastName: $lastName) {
+  mutation CreatePersonalInformation($input: PersonalInformationInput!) {
+    createPersonalInformation(input: $input) {
       id
       firstName
       lastName
+      # Include other fields as needed
     }
   }
 `;
 
-function AddPersonalInfo() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [createPersonalInformation, { data, loading, error }] = useMutation(CREATE_PERSONAL_INFORMATION);
+function CreatePersonalInfoForm() {
+    const [createPersonalInformation, { loading, error }] = useMutation(CREATE_PERSONAL_INFORMATION);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    createPersonalInformation({ variables: { firstName, lastName } });
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-  return (
-    <div>
-      <h2>Add Personal Information</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="firstName">First Name:</label>
-          <input
-            id="firstName"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            type="text"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="lastName">Last Name:</label>
-          <input
-            id="lastName"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            type="text"
-            required
-          />
-        </div>
-        <button type="submit" disabled={loading}>Submit</button>
-      </form>
-      {loading && <p>Submitting...</p>}
-      {error && <p>Error submitting information: {error.message}</p>}
-      {data && <p>Added: {data.createPersonalInformation.firstName} {data.createPersonalInformation.lastName}</p>}
-    </div>
-  );
+        const formData = new FormData(e.target);
+        const variables = {
+            input: {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                // Add other form fields as needed
+            }
+        };
+
+        try {
+            await createPersonalInformation({ variables });
+            // Handle success
+        } catch (error) {
+            // Handle error
+        }
+    };
+
+    if (loading) return <p>Loading...</p>;
+    if (error) return <p>An error occurred: {error.message}</p>;
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <input
+                name="firstName"
+                placeholder="First Name"
+            />
+            <input
+                name="lastName"
+                placeholder="Last Name"
+            />
+            {/* Add other input fields as necessary */}
+            <button type="submit">Submit</button>
+        </form>
+    );
 }
 
-export default AddPersonalInfo;
+export default CreatePersonalInfoForm;

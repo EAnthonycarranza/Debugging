@@ -1,47 +1,81 @@
 import React, { useEffect, useState } from 'react';
-import { useQuery, gql } from '@apollo/client';
 
-const GET_PERSONAL_INFORMATION = gql`
-  query GetPersonalInformation($id: ID!) {
-    personalInformation(id: $id) {
-      lastName
-      address
-      age
-      cityStateZip
-      dateOfBirth
-      dlOrIdNumber
-      firstName
-      gender
-      homePhone
-      id
-    }
+// Place the function at the top of your component file
+function getUserIdFromToken(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload).userId; // Assuming the payload has a userId field
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return null;
   }
-`;
+}
 
-const GetPersonalInformation = () => {
-  const userId = localStorage.getItem('userId');
-  const { loading, error, data } = useQuery(GET_PERSONAL_INFORMATION, {
-    variables: { id: userId },
-    skip: !userId,
-    fetchPolicy: 'network-only',
-  });
+function PersonalInformation() {
+  const [personalInfo, setPersonalInfo] = useState(null);
+  const [error, setError] = useState('');
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-  if (!data || !data.personalInformation) return <p>No personal information found</p>;
+  useEffect(() => {
+    const fetchPersonalInformation = async () => {
+      const token = localStorage.getItem('token'); // Get the token from storage
+      if (!token) {
+        setError('No token found');
+        return;
+      }
 
-  const info = data.personalInformation;
+      const userId = getUserIdFromToken(token); // Use the function to get userId
+      if (!userId) {
+        setError('Failed to decode token');
+        return;
+      }
+
+      // Update the URL with the userId
+      const url = `http://localhost:3001/api/personalinformation/${userId}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setPersonalInfo(data);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
+    fetchPersonalInformation();
+  }, []); // Empty dependency array means this effect runs once on mount
+
+  if (error) {
+    return <div>Error fetching data: {error}</div>;
+  }
+
+  if (!personalInfo) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
-      <h2>Personal Information</h2>
-      <p>Name: {info.firstName} {info.lastName}</p>
-      <p>Address: {info.address}, {info.cityStateZip}</p>
-      <p>Date of Birth: {new Date(info.dateOfBirth).toLocaleDateString()}</p>
-      <p>DL or ID Number: {info.dlOrIdNumber}</p>
-      <p>Gender: {info.gender}</p>
-      <p>Home Phone: {info.homePhone}</p>
+      <h1>Personal Information</h1>
+      {/* Render your personal information here */}
+      <div>First Name: {personalInfo.firstName}</div>
+      {/* Add more fields as needed */}
     </div>
   );
-};
+}
 
-export default GetPersonalInformation;
+export default PersonalInformation;
