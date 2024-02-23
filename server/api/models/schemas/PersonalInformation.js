@@ -23,6 +23,6 @@ const PersonalInformationSchema = new mongoose.Schema({
     residencyNumber: String,
     primaryLanguageSpoken: String,
     referredBy: String
-  });  
+  }); 
 
   module.exports = mongoose.model('PersonalInformation', PersonalInformationSchema);

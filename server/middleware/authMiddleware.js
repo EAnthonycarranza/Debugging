@@ -3,7 +3,8 @@
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Assuming a 'Bearer <token>' format
+  console.log("Request path:", req.path); // Add this line for debugging
+  const token = req.headers.authorization?.split(' ')[1];
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);

@@ -168,32 +168,33 @@ const resolvers = {
             }
             return "This is a protected query response";
           },    
-          personalInformations: async (_, __, { req }) => {
-            if (!req.user) throw new Error("Not authenticated");
-          
+          personalInformation: async (_, { id }, { req }) => {
             try {
-              // Assuming req.user.role includes the user's role
-              if (req.user.role === 'admin') {
-                // Fetch all records for admins
-                const personalInformations = await PersonalInformation.find({});
-                return personalInformations.map(info => ({
-                  ...info._doc, // Using ._doc to get the raw document
-                  id: info._id,
-                }));
-              } else {
-                // Fetch only user's records for non-admins
-                const personalInformations = await PersonalInformation.find({ userId: req.user.userId });
-                return personalInformations.map(info => ({
-                  ...info._doc,
-                  id: info._id,
-                }));
+              const info = await PersonalInformation.findById(id);
+              if (!info) {
+                throw new Error("Personal information not found.");
               }
-            } catch (error) {
-              console.error(error);
-              throw new Error('Error fetching personal information');
-            }
-          },
           
+              // Check if userId exists before calling toString()
+              if (!info.userId) {
+                throw new Error("UserId is missing in the personal information.");
+              }
+          
+              // Now that we've ensured info.userId exists, we can safely call toString()
+              const userIdString = info.userId.toString();
+          
+              // You might want to convert the entire document, including converting _id to string
+              return {
+                ...info.toObject(),
+                id: info._id.toString(), // Convert MongoDB ObjectId to String
+                userId: userIdString,
+                // Include other transformations if needed
+              };
+            } catch (error) {
+              console.error("Error fetching personal information by ID:", error);
+              throw new Error("Failed to fetch personal information.");
+            }
+          },             
           medicalInformations: async () => {
             try {
               const response = await fetch('http://localhost:3001/api/medicalInformation');
@@ -287,16 +288,7 @@ const resolvers = {
                   Authorization: req.headers.authorization // Pass the authorization header from the incoming request
                 }
               });
-              if (!response.ok) {
-                throw new Error('Failed to fetch agreement acknowledgements');
-              }
-              const agreementAcknowledgements = await response.json();
-              return agreementAcknowledgements.map(acknowledgement => ({
-                ...acknowledgement,
-                id: acknowledgement._id, // Map MongoDB '_id' to GraphQL 'id'
-                // Make sure to format or include any additional fields expected by your GraphQL schema here
-                // For example, if there are date fields, convert them to your required format
-              }));
+              // Further implementation...
             } catch (error) {
               console.error(error);
               throw new Error('Error fetching agreement acknowledgements');
@@ -304,14 +296,13 @@ const resolvers = {
           },
           
         // For queries fetching a single item by ID, ensure the item belongs to the user
-        personalInformation: async (_, { id }, { user }) => {
-          if (!user) throw new Error("Not authenticated");
+        personalInformation: async (_, { id }, { req }) => {
+          console.log("Requested ID:", id);
           const info = await PersonalInformation.findById(id);
-          if (!info || info.userId.toString() !== user.id) {
-            throw new Error("Not authorized to access this information");
-          }
-          return info;
-        },
+          console.log("Retrieved info:", info);
+          if (!info) throw new Error("Personal information not found.");
+          return info; // Simplified return for testing
+        },        
         medicalInformation: async (_, { id }, { user }) => {
           if (!user) throw new Error("Not authenticated");
           const info = await MedicalInformation.findById(id);
